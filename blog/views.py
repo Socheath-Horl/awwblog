@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Count
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Comment, Post
 from .forms import CommentForm
@@ -44,9 +45,13 @@ def post_detail(request, post):
       # redirect to same page and focus on that comment
       return redirect(post.get_absolute_url()+'#'+str(new_comment.id))
   else:
-      comment_form = CommentForm()
+    comment_form = CommentForm()
 
-  return render(request, 'post_detail.html',{'post':post,'comments': comments,'comment_form':comment_form})
+  post_tags_ids = post.tags.values_list('id', flat=True)
+  similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+  similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:6]
+
+  return render(request, 'post_detail.html',{'post':post,'comments': comments,'comment_form':comment_form, 'similar_posts': similar_posts})
 
 
 # handling reply, reply view
