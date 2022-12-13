@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Comment, Post
 from .forms import CommentForm
@@ -13,6 +13,10 @@ def post_list(request, tag_slug = None):
   if tag_slug:
     tag = get_object_or_404(Tag, slug=tag_slug)
     posts = posts.filter(tags__in=[tag])
+
+  query = request.GET.get("q")
+  if query:
+    posts = Post.published.filter(Q(title__icontains=query) | Q(tags__name__icontains=query)).distinct()
 
   paginator = Paginator(posts, 10)
   page = request.GET.get('page')
