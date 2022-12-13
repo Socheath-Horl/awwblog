@@ -2,10 +2,16 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Comment, Post
 from .forms import CommentForm
+from taggit.models import Tag
 
 
-def post_list(request):
+def post_list(request, tag_slug = None):
   posts = Post.published.all()
+
+  tag = None
+  if tag_slug:
+    tag = get_object_or_404(Tag, slug=tag_slug)
+    posts = posts.filter(tags__in=[tag])
 
   paginator = Paginator(posts, 10)
   page = request.GET.get('page')
@@ -16,7 +22,7 @@ def post_list(request):
   except EmptyPage:
     posts = paginator.page(paginator.num_pages)
 
-  return render(request=request, template_name='post_list.html', context={'posts': posts})
+  return render(request=request, template_name='post_list.html', context={'posts': posts, 'pages': page, 'tag': tag})
 
 
 def post_detail(request, post):
